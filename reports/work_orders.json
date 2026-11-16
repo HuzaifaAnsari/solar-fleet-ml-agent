@@ -1,0 +1,67 @@
+[
+  {
+    "plant": "F1M",
+    "status": "awaiting approval",
+    "fault": "inverter fault (IGBT)",
+    "fault_id": 1,
+    "confidence": 1.0,
+    "started_s": 8.4,
+    "windows": 55,
+    "power_lost_w": 196.1,
+    "kwh_at_risk_per_day": 0.98,
+    "severity": "critical",
+    "work_order": "F1M: suspected inverter fault (IGBT) (model confidence 1.0), detected at t=8.4s. Estimated loss 196.1 W, about 0.98 kWh/day if left unrepaired. Action: Isolate the inverter, check IGBT gate drivers and DC-link capacitors, replace the faulty module. Assign: electrician + inverter OEM."
+  },
+  {
+    "plant": "F5M",
+    "status": "awaiting approval",
+    "fault": "PV array open circuit",
+    "fault_id": 5,
+    "confidence": 0.94,
+    "started_s": 7.9,
+    "windows": 65,
+    "power_lost_w": 188.5,
+    "kwh_at_risk_per_day": 0.942,
+    "severity": "high",
+    "work_order": "F5M: suspected PV array open circuit (model confidence 0.94), detected at t=7.9s. Estimated loss 188.5 W, about 0.942 kWh/day if left unrepaired. Action: Locate the open string with string-level current checks; repair connectors or cabling. Assign: O&M crew."
+  },
+  {
+    "plant": "F2M",
+    "status": "awaiting approval",
+    "fault": "feedback sensor fault",
+    "fault_id": 2,
+    "confidence": 1.0,
+    "started_s": 8.7,
+    "windows": 57,
+    "power_lost_w": 0.1,
+    "kwh_at_risk_per_day": 0.0,
+    "severity": "high",
+    "work_order": "F2M: suspected feedback sensor fault (model confidence 1.0), detected at t=8.7s. Estimated loss 0.1 W, about 0.0 kWh/day if left unrepaired. Action: Compare the phase-voltage sensor against a calibrated meter; recalibrate or replace the sensor. Assign: instrumentation tech."
+  },
+  {
+    "plant": "F6M",
+    "status": "awaiting approval",
+    "fault": "boost converter controller fault (PI gain)",
+    "fault_id": 6,
+    "confidence": 1.0,
+    "started_s": 12.2,
+    "windows": 3,
+    "power_lost_w": 3.3,
+    "kwh_at_risk_per_day": 0.016,
+    "severity": "medium",
+    "work_order": "F6M: suspected boost converter controller fault (PI gain) (model confidence 1.0), detected at t=12.2s. Estimated loss 3.3 W, about 0.016 kWh/day if left unrepaired. Action: Review boost-converter PI controller settings against commissioning values; restore and retest. Assign: controls engineer."
+  },
+  {
+    "plant": "F7M",
+    "status": "awaiting approval",
+    "fault": "boost converter controller fault",
+    "fault_id": 7,
+    "confidence": 0.8,
+    "started_s": 11.2,
+    "windows": 32,
+    "power_lost_w": 0.0,
+    "kwh_at_risk_per_day": 0.0,
+    "severity": "medium",
+    "work_order": "F7M: suspected boost converter controller fault (model confidence 0.8), detected at t=11.2s. Estimated loss 0.0 W, about 0.0 kWh/day if left unrepaired. Action: Run controller diagnostics on the boost converter; reflash firmware or replace the control board. Assign: controls engineer."
+  }
+]
