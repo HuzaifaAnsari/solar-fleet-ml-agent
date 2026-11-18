@@ -1,0 +1,21 @@
+id	description	unseen_macro_f1	unseen_worst_recall	unseen_false_alarm	same_plant_macro_f1	decision
+0	baseline: published model (physics features, site z-scores, balanced HGB)	0.5040	0.0000	0.0542	0.8005	keep
+1	spectral band energies + waveform shape, site z-scored only (no absolute features)	0.2874	0.0000	0.0241	0.8567	discard
+2	shallow regularised HGB (max_depth 3, l2 1.0): fewer mode-specific interactions	0.4814	0.0000	0.1446	0.7844	discard
+3	drop the 13 within-window std features (keep means + derived physics)	0.4548	0.0000	0.0783	0.7788	discard
+4	drop the 13 window means (keep stds + derived physics)	0.2639	0.0000	0.0361	0.7131	discard
+5	scale deviations by plant operating level |mu|+std (percent change) instead of healthy std	0.4244	0.0000	0.0181	0.8410	discard
+6	z-score AND percent-change views of each feature side by side	0.4861	0.0000	0.0361	0.8295	discard
+7	ExtraTrees (500, balanced) instead of boosting: random thresholds, less fit to one mode's exact values	0.3639	0.0000	0.0000	0.7788	discard
+8	clip site z-scores to +-5: keep fault direction, drop mode-specific magnitude	0.5881	0.0500	0.0482	0.8005	keep
+9	logistic regression (C 0.1, balanced) on z clipped +-5: a linear model can only learn fault direction	0.4837	0.0000	0.4337	0.6383	discard
+10	clip z at +-3 instead of +-5	0.4943	0.0000	0.0542	0.8030	discard
+11	clip z at +-8 (sensitivity check around +-5)	0.6048	0.0500	0.0663	0.7895	discard
+12	clip z at +-10 (sensitivity check around +-5)	0.5907	0.0500	0.0602	0.7998	discard
+13	clip z at +-4 (sensitivity check around +-5)	0.5837	0.0500	0.0663	0.8036	discard
+14	add log FFT band energies (z-scored, clipped +-5): exp 1 may have failed on magnitude, not content	0.4817	0.0000	0.0361	0.8502	discard
+15	sqrt-of-balanced sample weights instead of class_weight=balanced	0.5900	0.0500	0.0422	0.8127	discard
+16	soft vote HGB + ExtraTrees on clipped z	0.5602	0.0500	0.0422	0.8183	discard
+17	z-score + percent-change views, both clipped +-5	0.5616	0.0000	0.0361	0.8348	discard
+18	add per-signal rate of change (std of first difference), z-scored and clipped: targets the PI-gain fault	0.6243	0.0500	0.0663	0.8153	discard
+19	loop 3 (after research): train only on fault windows that are visibly off the plant's healthy baseline (max |z| > 4); onset audit showed many fault-labelled windows look healthy	0.3596	0.0000	0.0000	0.5713	discard

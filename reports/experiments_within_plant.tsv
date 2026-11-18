@@ -1,0 +1,19 @@
+id	description	val_macro_f1	val_worst_recall	val_false_alarm	decision
+0	baseline: physics features + site z-scores + balanced HGB (published model)	0.8005	0.2000	0.1687	keep
+1	add log band energies (6 FFT bands x 13 signals): PI-gain fault changes oscillation, not mean	0.8423	0.4500	0.1325	keep
+2	add waveform shape stats (skew, kurtosis, peak-to-peak per signal): distortion before the mean moves	0.8567	0.4500	0.1265	keep
+3	drop the 13 absolute signal means: slow healthy drift moves them (suspected false-alarm source)	0.8382	0.4500	0.1386	discard
+4	feed both raw features and site z-scores: let the trees pick absolute or site-relative splits	0.8656	0.5000	0.1446	discard
+5	regularise HGB (lr 0.05, 300 iters, depth 4, min leaf 10, l2 1.0): ~35 fit windows per fault class	0.8635	0.6000	0.1506	discard
+6	sqrt-balanced class weights instead of balanced: full balance weights faults ~8x and over-calls healthy windows	0.8776	0.4500	0.0904	keep
+7	retry raw + site z-scores on the sqrt-weight base (exp 4 failed on false alarms caused by weighting)	0.8981	0.5500	0.1024	discard
+8	class weights at balanced^0.25 (from ^0.5): continue the false-alarm direction	0.8781	0.4500	0.0904	discard
+9	causal history: std of each feature over the last 5 windows (~0.5 s) to see slow PI-gain oscillation	0.8568	0.4500	0.1024	discard
+10	finer spectrum: split 10-45 Hz controller band, add 5th/7th grid harmonics (inverter switching faults)	0.8541	0.4000	0.1024	discard
+11	model family: ExtraTrees (500 trees, sqrt weights) instead of HGB; random splits overfit less on ~35/class	0.7555	0.1429	0.0100	discard
+12	soft-vote HGB + ExtraTrees: boosting over-calls faults, ExtraTrees under-calls; average the probabilities	0.8801	0.4500	0.0763	discard
+13	robust site baseline (median / IQR instead of mean / std): transient healthy windows skew the reference	0.8590	0.5000	0.1145	discard
+14	combine near-misses: raw + site z features (exp 7) with HGB + ExtraTrees soft vote (exp 12)	0.9090	0.6000	0.0904	keep
+15	add the 1D-CNN (raw waveforms, train.py) as a third soft-vote member: deep learning view of the signals	0.8875	0.6667	0.1406	discard
+16	augment fit set with half-shifted windows from consecutive same-plant same-class fit windows (~2x data)	0.9008	0.5500	0.0763	discard
+17	add RandomForest as a third soft-vote member (bootstrap trees: different errors from ExtraTrees and HGB)	0.9002	0.6153	0.0904	discard
