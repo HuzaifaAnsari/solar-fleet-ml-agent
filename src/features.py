@@ -32,7 +32,7 @@ def load(name: str) -> dict[str, np.ndarray]:
         names = ["".join(map(chr, f[r][:].ravel())) for r in f["#refs#/v"][:].ravel()]
         cols = [f[r][:].ravel() for r in f["#refs#/c"][:].ravel()]
     assert names == COLUMNS, f"unexpected columns in {name}: {names}"
-    return dict(zip(names, cols))
+    return dict(zip(names, cols, strict=True))
 
 
 def windows(name: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

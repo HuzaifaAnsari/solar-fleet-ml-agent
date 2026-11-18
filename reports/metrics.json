@@ -496,9 +496,11 @@
   },
   "cross_mode": {
     "train_M_test_L": {
+      "macro_f1_raw_features": 0.1149452269170579,
       "macro_f1": 0.4942117169409189
     },
     "train_L_test_M": {
+      "macro_f1_raw_features": 0.25279720279720275,
       "macro_f1": 0.5228280703786021
     }
   }

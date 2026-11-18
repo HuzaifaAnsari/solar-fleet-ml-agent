@@ -10,7 +10,8 @@ Each GPVS-Faults experiment is replayed as one "plant". Per plant:
 If OPENAI_API_KEY is set an LLM rewrites the work order in plain language; on failure the template stands.
 
 Run: python -m src.agent            (replays the 8 MPPT experiments, writes reports/work_orders.md)
-Note: this replays the experiments the classifier was trained on. Held-out accuracy is in reports/results.md.
+Note: this replays the experiments the classifier was trained on. Held-out same-plant scores are in reports/results.md;
+unseen-plant, time-matched scores (the fleet estimate) are in reports/final_test.json.
 """
 import json
 import os
@@ -66,10 +67,10 @@ def plant_report(name: str, gbm, k: float) -> dict:
 
     idx = max(incidents, key=len)  # the longest abnormal stretch
     faulty = [t for t in idx if pred[t] != 0] or idx
-    cls = int(np.bincount(pred[faulty].astype(int)).argmax()) or 0
+    cls = int(np.bincount(pred[faulty].astype(int)).argmax())  # 0: the chart fired but the classifier names no fault
     lost_w = max(float(p_dc[:n0].mean() - p_dc[idx].mean()), 0.0)
     return {
-        "plant": name, "status": "incident", "fault": FAULTS.get(cls, "unclassified anomaly"), "fault_id": cls,
+        "plant": name, "status": "incident", "fault": FAULTS[cls] if cls else "unclassified anomaly", "fault_id": cls,
         "confidence": round(float(proba[faulty, list(gbm.classes_).index(cls)].mean()), 2) if cls else None,
         "started_s": round(float(times[idx[0]]), 2), "windows": len(idx),
         "power_lost_w": round(lost_w, 1), "kwh_at_risk_per_day": round(lost_w * SUN_HOURS / 1000, 3),
@@ -95,7 +96,8 @@ def work_order(r: dict) -> dict:
     return {**r, "severity": severity, "work_order": text, "status": "awaiting approval"}
 
 
-def run_fleet(mode: str = "M") -> list[dict]:
+def run_fleet(mode: str = "M") -> tuple[list[dict], list[dict]]:
+    """Work orders (ranked by severity, then kWh at risk) and the plants that raised no incident."""
     models = joblib.load(ROOT / "models" / "sklearn.joblib")
     reports = [plant_report(f"F{f}{mode}", models["gbm"], models["chart_k"]) for f in range(8)]
     orders = [work_order(r) for r in reports if r["status"] == "incident"]
