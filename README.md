@@ -8,7 +8,7 @@ An LLM agent is good at turning a detection into a clear work order. It is not a
 
 Everything runs on real, labelled fault experiments from a grid-connected PV system ([GPVS-Faults](https://data.mendeley.com/datasets/n76t439f65/1)), with no API key needed.
 
-```
+```text
 sensor windows ──► physics features ──► per-site baseline (z-scores)
                     (DC vs AC power,          │
                      phase imbalance,         ├─► control chart ──► IS something wrong?   (unsupervised)
@@ -19,9 +19,11 @@ sensor windows ──► physics features ──► per-site baseline (z-scores)
                        playbook + priority ► work order ► awaiting human approval   (optional LLM rewrite, template fallback)
 ```
 
-## Results (held-out data)
+## Results on the same plants (held-out time)
 
 Split: inside each experiment, the earlier 70% of windows train and the later 30% test. Neighbouring 0.1 s windows are nearly identical, so a random shuffle would leak answers into the test set.
+
+These scores test later windows of the plants the models trained on. For a plant whose faults the model has never seen, the honest estimate is lower: macro-F1 **0.46** (see [the research loop](#automated-research-loop)).
 
 | Mode | Model | Accuracy | Macro-F1 | Worst-class recall |
 |---|---|---|---|---|
@@ -45,7 +47,7 @@ Split: inside each experiment, the earlier 70% of windows train and the later 30
 | IPPT | Control chart on site baseline, k=4 | 95% | 68% | 3% |
 | IPPT | Control chart on site baseline, k=6 | 99% | 58% | 1% |
 
-**Per-site baselines generalise.** Training on one operating mode and testing on the other, gradient-boosting macro-F1 rises from **0.18 to 0.49** (MPPT→IPPT) and from **0.31 to 0.52** (IPPT→MPPT) once features are expressed relative to each site's own healthy history.
+**Per-site baselines help across modes.** Training on one operating mode and testing on the other, gradient-boosting macro-F1 rises from **0.11 to 0.49** (MPPT→IPPT) and from **0.25 to 0.52** (IPPT→MPPT) once features are expressed relative to each site's own healthy history. *Both scores use all test windows, so run drift (see the research loop) inflates them.*
 
 **The two layers cover each other.** The control chart misses partial shading entirely (0% recall), but the supervised classifier catches it at 100% (MPPT) and 95% (IPPT) recall. *Later check: shading moves no feature beyond the drift a healthy run shows over the same time, so these same-plant scores likely reflect drift and plant identity. See the research loop below.*
 
@@ -67,7 +69,7 @@ The first loop scored the experiments it trained on. Over 18 runs, validation ma
 
 ### Loop 2 scored unseen plants, and found a second shortcut: drift
 
-The harness then trained on one control mode's 8 experiments plus the other mode's healthy "commissioning" windows, and named faults on that other mode. That is the fleet case: a new plant has a healthy history, but its faults haven't happened yet. Best of 19 tried was clipping each site z-score to ±5, at 0.52 → 0.59 on the locked test ([log](reports/experiments_unseen_plant.tsv), [test](reports/final_test_unseen_plant.json)).
+The harness then trained on one control mode's 8 experiments plus the other mode's healthy "commissioning" windows, and named faults on that other mode. That is the fleet case: a new plant has a healthy history, but its faults haven't happened yet. Best of 19 tried was [clipping each site z-score to ±5](docs/candidates/clip_z5.py), at 0.52 → 0.59 on the locked test ([log](reports/experiments_unseen_plant.tsv), [test](reports/final_test_unseen_plant.json); row 19 of the log is a later check on the same harness).
 
 That number did not survive the next check:
 
@@ -87,17 +89,18 @@ Locked test, unseen plants, time-matched (mean of 3 seeds and both directions; [
 | Model | Macro-F1 | IPPT→MPPT | MPPT→IPPT | Late healthy windows called a fault | All-window accuracy | All-window false alarms |
 |---|---|---|---|---|---|---|
 | Published model | **0.46** | 0.53 | 0.39 | 87% | 68% | 21% |
-| Loop-2 winner (±5 clip) | 0.43 | 0.43 | 0.42 | 82% | 67% | 20% |
+| [Loop-2 winner (±5 clip)](docs/candidates/clip_z5.py) | 0.43 | 0.43 | 0.42 | 82% | 67% | 20% |
 | [Detect-then-name](docs/candidates/detect_then_name.py) (a discard) | 0.39 | 0.43 | 0.35 | **26%** | **71%** | **5.6%** |
 
-The test set has now been scored for three models. None was chosen by its test score: the gate decided on validation, and the discard is shown because it's a different trade-off, not a better model.
+The test set has now been scored for three models. None was chosen by its test score: the gate decided on validation, and the discard is shown because it's a different trade-off, not a better model. To reproduce a row, copy its file from [`docs/candidates/`](docs/candidates) over `src/experiment.py` and run `python -m src.final_test "<label>"`.
 
-Recall by class, same test:
+Recall by class, same test (`recall_by_class` in the same file):
 
 | Model | Late healthy | F1 inverter | F2 sensor | F3 grid | F4 shading | F5 open circuit | F6 PI gain | F7 controller |
 |---|---|---|---|---|---|---|---|---|
 | Published model | 0.13 | 0.35 | 0.85 | 0.35 | 0.58 | 0.90 | 0.28 | 0.33 |
-| [Detect-then-name](docs/candidates/detect_then_name.py) | 0.74 | 0.48 | 0.85 | 0.04 | 0.00 | 0.90 | 0.15 | 0.30 |
+| Loop-2 winner (±5 clip) | 0.18 | 0.00 | 1.00 | 0.35 | 0.58 | 0.90 | 0.30 | 0.30 |
+| Detect-then-name | 0.74 | 0.48 | 0.85 | 0.04 | 0.00 | 0.90 | 0.15 | 0.30 |
 
 What this supports:
 
@@ -160,6 +163,7 @@ python -m src.agent            # replays the fleet, writes reports/work_orders.m
 python -m pytest -q            # data-free unit tests (also run in CI)
 python -m src.prepare "what changed"   # one research-loop experiment, scored on validation only
 python -m src.final_test "label"       # after the loop: score the locked test set
+python -m scripts.drift_probe          # how far a healthy run drifts, and whether grid signals explain it
 ```
 
 Optional: set `OPENAI_API_KEY` (and `OPENAI_MODEL`) to have an LLM rewrite each work order in plain language. If the call fails, the template work order stands.

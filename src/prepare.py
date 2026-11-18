@@ -15,7 +15,8 @@ healthy run's late windows called a fault. All-window scores are logged for info
 
 Loop:  python -m src.prepare "what changed"   -> scores src/experiment.py on VALIDATION only, appends a row to
        reports/experiments.tsv, and prints KEEP or DISCARD by the rule in keep().
-Final: python -m src.final_test               -> run once, after the loop: retrain on train+val, score the locked test.
+Final: python -m src.final_test "label"       -> after the loop, once per reported model: retrain on train+val,
+       score the locked test, write reports/final_test.json.
 """
 import csv
 import json
@@ -76,13 +77,15 @@ def score(y_true, y_pred):
     return {"macro_f1": f1_score(y_true, y_pred, labels=list(FAULTS), average="macro", zero_division=0),
             "worst_recall": recall_score(y_true, y_pred, labels=list(FAULTS), average=None, zero_division=0).min(),
             "false_alarm": float((y_pred[healthy] != 0).mean()),
-            "accuracy": float((y_pred == y_true).mean())}
+            "accuracy": float((y_pred == y_true).mean()),
+            "recall_by_class": recall_score(y_true, y_pred, labels=list(FAULTS), average=None, zero_division=0)}
 
 
 def mean(runs, group):
-    return {**{k: float(np.mean([r[k] for r in runs])) for k in KEYS},
-            "by": {g: {k: float(np.mean([r[k] for r in runs if r[group] == g])) for k in KEYS}
-                   for g in dict.fromkeys(r[group] for r in runs)}}
+    """Average every score over runs, overall and per value of `group`; per-class recall averages element-wise."""
+    def avg(rs):
+        return {k: np.mean([r[k] for r in rs], axis=0).tolist() for k in rs[0] if k != group}
+    return {**avg(runs), "by": {g: avg([r for r in runs if r[group] == g]) for g in dict.fromkeys(r[group] for r in runs)}}
 
 
 def evaluate(stage="val"):

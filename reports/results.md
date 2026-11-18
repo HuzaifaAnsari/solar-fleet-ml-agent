@@ -20,4 +20,4 @@
 | IPPT | Control chart on site baseline, k=6 | 99% | 58% | 1% |
 | IPPT | Control chart on site baseline, k=8 | 99% | 55% | 1% |
 
-Cross-mode (train on one operating mode, test on the other), gradient boosting with site baselines, macro-F1: train M test L = 0.49, train L test M = 0.52
+Cross-mode (train on one operating mode, test on the other), gradient boosting, macro-F1 raw -> site-baseline features: train M test L = 0.11 -> 0.49, train L test M = 0.25 -> 0.52

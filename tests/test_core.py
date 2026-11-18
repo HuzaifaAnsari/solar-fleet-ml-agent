@@ -3,7 +3,7 @@ import numpy as np
 
 from src.agent import PLAYBOOK, RANK, work_order
 from src.features import SIGNALS, featurize
-from src import experiment, prepare
+from src import agent, experiment, prepare
 from src.prepare import keep, second_half, split
 from src.train import control_chart, site_baseline, time_split
 
@@ -46,11 +46,25 @@ def test_work_order_is_held_for_approval_and_ranked():
     assert all(sev in RANK for sev, _, _ in PLAYBOOK.values())
 
 
+def test_incident_the_classifier_calls_healthy_is_reported_as_unclassified(monkeypatch):
+    x = np.random.default_rng(0).normal(size=(40, len(SIGNALS), 50))
+    x[30:, SIGNALS.index("Vdc")] += 100                                 # the chart sees the last 10 windows
+    monkeypatch.setattr(agent, "windows", lambda name: (x, None, np.arange(40) * 0.1))
+
+    class AllHealthy:
+        classes_ = np.array([0, 1])
+        def predict_proba(self, Z):
+            return np.tile([1.0, 0.0], (len(Z), 1))
+
+    r = agent.plant_report("P1", AllHealthy(), k=4)
+    assert r["status"] == "incident" and r["fault"] == "unclassified anomaly" and r["confidence"] is None
+
+
 def test_research_split_is_time_ordered_55_15_30_in_each_half_of_every_run():
-    half = np.array([0] * 11 + [1] * 3 + [2] * 6)
+    per_half = np.array([0] * 11 + [1] * 3 + [2] * 6)  # 20 windows: 55% train, 15% validation, 30% test
     fault_run = split(np.r_[np.zeros(20, int), np.full(20, 3)], np.zeros(40, int))
     healthy_run = split(np.zeros(40, int), np.ones(40, int))  # its second half is tested like a fault's: drift shows up
-    assert (fault_run == np.r_[half, half]).all() and (healthy_run == np.r_[half, half]).all()
+    assert (fault_run == np.r_[per_half, per_half]).all() and (healthy_run == np.r_[per_half, per_half]).all()
     assert (second_half(np.zeros(40, int), np.ones(40, int)) == np.r_[np.zeros(20), np.ones(20)]).all()
 
 

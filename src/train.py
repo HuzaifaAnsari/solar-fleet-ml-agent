@@ -160,9 +160,12 @@ def main():
     for a, b in (("M", "L"), ("L", "M")):
         (xa, ya, fa, _), (xb, yb, fb, _) = data[a], data[b]
         ta, tb = time_split(ya, fa), time_split(yb, fb)
-        Fa, Fb = site_baseline(featurize(xa), ya, fa, ta), site_baseline(featurize(xb), yb, fb, tb)
-        gbm = HistGradientBoostingClassifier(class_weight="balanced", random_state=SEED).fit(Fa[ta], ya[ta])
-        metrics["cross_mode"][f"train_{a}_test_{b}"] = {"macro_f1": f1_score(yb[~tb], gbm.predict(Fb[~tb]), average="macro")}
+        Ra, Rb = featurize(xa), featurize(xb)
+        Fa, Fb = site_baseline(Ra, ya, fa, ta), site_baseline(Rb, yb, fb, tb)
+        metrics["cross_mode"][f"train_{a}_test_{b}"] = {
+            name: f1_score(yb[~tb], HistGradientBoostingClassifier(class_weight="balanced", random_state=SEED)
+                           .fit(A[ta], ya[ta]).predict(B[~tb]), average="macro")
+            for name, A, B in (("macro_f1_raw_features", Ra, Rb), ("macro_f1", Fa, Fb))}
 
     (REPORTS / "metrics.json").write_text(json.dumps(metrics, indent=2, default=float) + "\n", encoding="utf-8")
     write_results(metrics)
@@ -186,8 +189,9 @@ def write_results(m):
         lines.append(f"| {md} | Isolation Forest, raw features | {pct(d['precision'])} | {pct(d['recall'])} | {pct(d['false_alarm_rate'])} |")
         for k, d in r["detector_control_chart_site_baseline"].items():
             lines.append(f"| {md} | Control chart on site baseline, {k} | {pct(d['precision'])} | {pct(d['recall'])} | {pct(d['false_alarm_rate'])} |")
-    lines += ["", "Cross-mode (train on one operating mode, test on the other), gradient boosting with site baselines, macro-F1: "
-              + ", ".join(f"{k.replace('_', ' ')} = {v['macro_f1']:.2f}" for k, v in m["cross_mode"].items())]
+    lines += ["", "Cross-mode (train on one operating mode, test on the other), gradient boosting, macro-F1 raw -> site-baseline "
+              "features: " + ", ".join(f"{k.replace('_', ' ')} = {v['macro_f1_raw_features']:.2f} -> {v['macro_f1']:.2f}"
+                                      for k, v in m["cross_mode"].items())]
     (REPORTS / "results.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
 
