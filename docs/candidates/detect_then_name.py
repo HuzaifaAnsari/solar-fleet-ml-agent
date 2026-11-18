@@ -1,5 +1,5 @@
-"""The ONE file the research agent edits (see program.md). Baseline = the published model in src/train.py:
-physics features -> per-site baseline z-scores -> balanced gradient boosting.
+"""Detect-then-name: the loop-3 discard reported in the README (late false alarms 87% -> 26%, macro-F1 0.46 -> 0.39).
+Reproduce: copy this file over src/experiment.py, then run  python -m src.final_test "detect-then-name".
 
 Contract: fit_predict(x_fit, y_fit, files_fit, x_eval, files_eval, seed) -> predicted labels for x_eval.
 x is raw windows (n, 13 signals, 1000 samples) in time order within each file. files_eval may name plants whose only

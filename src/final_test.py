@@ -1,4 +1,4 @@
-"""Run ONCE, after the research loop: retrain src/experiment.py on train+validation, score the locked test set.
+"""Run after the loop ends, once per model you report: retrain src/experiment.py on train+validation, score the locked test.
 
 Writes reports/final_test.json. Never run this inside the loop: choosing changes by test score would make it dishonest.
 """
