@@ -3,3 +3,5 @@ models/
 __pycache__/
 *.pyc
 .pytest_cache/
+data/cache/
+.coverage

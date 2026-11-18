@@ -3,6 +3,7 @@ import numpy as np
 
 from src.agent import PLAYBOOK, RANK, work_order
 from src.features import SIGNALS, featurize
+from src.prepare import keep, second_half, split
 from src.train import control_chart, site_baseline, time_split
 
 
@@ -42,3 +43,19 @@ def test_work_order_is_held_for_approval_and_ranked():
     o = work_order(r)
     assert o["status"] == "awaiting approval" and o["severity"] == "critical"
     assert all(sev in RANK for sev, _, _ in PLAYBOOK.values())
+
+
+def test_research_split_is_time_ordered_55_15_30_in_each_half_of_every_run():
+    half = np.array([0] * 11 + [1] * 3 + [2] * 6)
+    fault_run = split(np.r_[np.zeros(20, int), np.full(20, 3)], np.zeros(40, int))
+    healthy_run = split(np.zeros(40, int), np.ones(40, int))  # its second half is tested like a fault's: drift shows up
+    assert (fault_run == np.r_[half, half]).all() and (healthy_run == np.r_[half, half]).all()
+    assert (second_half(np.zeros(40, int), np.ones(40, int)) == np.r_[np.zeros(20), np.ones(20)]).all()
+
+
+def test_keep_gate_needs_real_gain_without_worse_recall_or_false_alarms():
+    best = {"macro_f1": 0.5, "worst_recall": 0.1, "false_alarm": 0.05}
+    assert keep(best, None) and keep({**best, "macro_f1": 0.52}, best)
+    assert not keep({**best, "macro_f1": 0.505}, best)                         # within noise
+    assert not keep({**best, "macro_f1": 0.6, "false_alarm": 0.06}, best)      # bought with false alarms
+    assert not keep({**best, "macro_f1": 0.6, "worst_recall": 0.0}, best)      # a class got dropped

@@ -1,0 +1,4 @@
+id	description	unseen_macro_f1	unseen_worst_recall	unseen_false_alarm	unseen_accuracy	same_plant_macro_f1	decision
+0	baseline: the published model, re-scored with the drift control (healthy run's second half scored)	0.6177	0.0500	0.1625	0.7312	0.7966	keep
+1	loop-2 winner (site z clipped at +-5), re-scored with the drift control	0.5939	0.0500	0.1745	0.7175	0.8029	discard
+2	drift rows: healthy-only files' later half z-scored against their earlier half, added as healthy training rows	0.4618	0.0000	0.0899	0.7077	0.7991	discard

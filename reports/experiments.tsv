@@ -1,0 +1,12 @@
+id	description	unseen_macro_f1	unseen_worst_recall	unseen_false_alarm	unseen_accuracy	all_windows_macro_f1	all_windows_false_alarm	same_plant_macro_f1	decision
+0	baseline: the published model (time-matched gate)	0.5367	0.0000	0.8889	0.5305	0.6177	0.1625	0.8454	keep
+1	loop-2 winner: site z clipped at +-5 (time-matched gate)	0.5183	0.0000	0.8889	0.5167	0.5939	0.1745	0.8517	discard
+2	same reference for every plant: each file's earliest 15 healthy windows, so trained-on plants show drift exactly like unseen ones	0.3214	0.0000	0.6111	0.3607	0.3989	0.1135	0.8100	discard
+3	drift rows: healthy-only files' later half z-scored against their earlier half, added as healthy training rows	0.3928	0.0000	0.5111	0.4493	0.4618	0.0899	0.8431	discard
+4	1D-CNN (src/train.py's) on raw waveforms referenced per plant: each channel standardised by the plant's healthy fit windows (GPVS leakage-aware study: referenced CNN best IPPT->MPPT)	0.3876	0.0000	0.9444	0.4237	0.4075	0.6024	0.6683	discard
+5	reference level from each file's earliest 15 healthy windows (drift shows on every plant alike), scale from all its healthy windows (stable)	0.4197	0.0000	0.6167	0.4219	0.4888	0.1137	0.8560	discard
+6	reference = healthy windows from the first half of each run only (healthy run included), matching how unseen plants are referenced; fixes the swapped healthy/F6 confusion	0.2454	0.0000	0.1111	0.3265	0.3074	0.0244	0.8642	discard
+7	two stages: detect = outside a per-feature healthy envelope that includes the healthy run's late drift (99.5% quantile); name = classifier over visibly faulty fault windows only	0.2556	0.0000	0.5778	0.2919	0.3092	0.2467	0.5583	discard
+8	two stages, references as published: detect = beyond max healthy |z| per feature incl. drift rows (healthy-only files' late vs early half); name = classifier over visibly faulty fault windows	0.3315	0.0000	0.2611	0.3937	0.3917	0.0482	0.5972	discard
+9	two stages as row 8, but name only faults with >= 5 visibly faulty training windows (F3/F4 had 0-2: class balancing blew up their weight and stole F1/F2)	0.3674	0.0000	0.2611	0.4279	0.4276	0.0482	0.6024	discard
+10	drift-aware detector (row 8) decides healthy vs fault; the published classifier names flagged windows with its most likely fault class	0.4449	0.0000	0.2611	0.5236	0.5074	0.0482	0.5944	discard
